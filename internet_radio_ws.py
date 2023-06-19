@@ -8,6 +8,9 @@ from chromedriver_py import binary_path
 from selenium.webdriver.common.by import By
 import time
 
+TIMEOUT = 3
+URL = "https://www.internet-radio.com/"
+
 def process_url(url):
     SEP = "?u="
     url_list = url.split(SEP)
@@ -15,54 +18,62 @@ def process_url(url):
 
 def process_name(name):
     return name.replace('\"', '')
-TIMEOUT = 3
 
-service_object = Service(binary_path)
-driver = webdriver.Chrome(service=service_object)
+def search_station(driver, station_name):
+    input_search = driver.find_element(By.XPATH, "//input[@name='radio']")
+    input_search.send_keys(station_name)
+    btn_search = driver.find_element(By.XPATH, "//button[@class='btn btn-default']")
+    btn_search.click()
+    time.sleep(TIMEOUT)
 
-driver.get("https://www.internet-radio.com/")
-driver.maximize_window()
-time.sleep(TIMEOUT)
+def get_stations(driver):
+    current_url = driver.current_url
 
-input_search = driver.find_element(By.XPATH, "//input[@name='radio']")
-input_search.send_keys("industrial")
+    req = requests.get(current_url)
+    statusCode = req.status_code
+    htmlText = req.text
+    html = BeautifulSoup(req.text, "html.parser")
+    entradas = html.find('table', {'class': 'table table-striped'})
+    elementos = entradas.find_all('tr')
 
-btn_search = driver.find_element(By.XPATH, "//button[@class='btn btn-default']")
-btn_search.click()
-time.sleep(TIMEOUT)
+    names = []
+    urls = []
 
-current_url = driver.current_url
-print(current_url)
-req = requests.get(current_url)
-statusCode = req.status_code
-htmlText = req.text
-print(htmlText)
+    for elemento in elementos:
+        sub_elementos = elemento.find_all('td')
 
-html = BeautifulSoup(req.text, "html.parser")
-entradas = html.find('table', {'class': 'table table-striped'})
-elementos = entradas.find_all('tr')
+        # obtener título
+        titulo = process_name(sub_elementos[2].find('h4').getText())
+        names.append(titulo)
 
-names = []
-urls = []
+        # obtener enlace
+        enlaces = sub_elementos[1].find_all('a', href=True)
+        url = process_url(enlaces[1]['href'])
+        urls.append(url)
 
-for elemento in elementos:
-    sub_elementos = elemento.find_all('td')
+    dicc = {
+            'names': names,
+            'urls': urls
+            }
 
-    # obtener título
-    #titulo = sub_elementos[2].find('h4')
-    titulo = process_name(sub_elementos[2].find('h4').getText())
-    names.append(titulo)
+    return dicc
 
-    # obtener enlace
-    enlaces = sub_elementos[1].find_all('a', href=True)
-    url = process_url(enlaces[1]['href'])
-    urls.append(url)
+def main():
+    FILE_NAME = "lofi.csv"
+    SEARCH_NAME = "lofi"
 
-dicc = {
-        'names': names,
-        'urls': urls
-        }
+    service_object = Service(binary_path)
+    driver = webdriver.Chrome(service=service_object)
 
-df = pd.DataFrame(dicc)
-df.to_csv('prueba.csv', index=False)
-driver.close()
+    driver.get(URL)
+    driver.maximize_window()
+    time.sleep(TIMEOUT)
+
+    search_station(driver, SEARCH_NAME)
+    dicc = get_stations(driver)
+
+    df = pd.DataFrame(dicc)
+    df.to_csv(FILE_NAME, index=False)
+    driver.close()
+
+main()
