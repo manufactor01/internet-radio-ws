@@ -8,18 +8,9 @@ from selenium.webdriver.chrome.service import Service
 from chromedriver_py import binary_path
 from selenium.webdriver.common.by import By
 
+from internet_radio_page import InternetRadioPage
 from utils import process_url
 from utils import process_name
-
-TIMEOUT = 3
-URL = "https://www.internet-radio.com/"
-
-def search_station(driver, station_name):
-    input_search = driver.find_element(By.XPATH, "//input[@name='radio']")
-    input_search.send_keys(station_name)
-    btn_search = driver.find_element(By.XPATH, "//button[@class='btn btn-default']")
-    btn_search.click()
-    time.sleep(TIMEOUT)
 
 def get_stations(driver):
     current_url = driver.current_url
@@ -57,11 +48,10 @@ def search_and_get_stations(search_name, file_name):
     service_object = Service(binary_path)
     driver = webdriver.Chrome(service=service_object)
 
-    driver.get(URL)
-    driver.maximize_window()
-    time.sleep(TIMEOUT)
+    p = InternetRadioPage(driver)
+    p.open()
+    p.search_station(search_name)
 
-    search_station(driver, search_name)
     dicc = get_stations(driver)
 
     df = pd.DataFrame(dicc)
