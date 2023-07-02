@@ -1,3 +1,6 @@
+from utils import process_url
+from utils import process_name
+
 import csv
 import requests
 from bs4 import BeautifulSoup
@@ -10,14 +13,6 @@ import time
 
 TIMEOUT = 3
 URL = "https://www.internet-radio.com/"
-
-def process_url(url):
-    SEP = "?u="
-    url_list = url.split(SEP)
-    return url_list[1]
-
-def process_name(name):
-    return name.replace('\"', '')
 
 def search_station(driver, station_name):
     input_search = driver.find_element(By.XPATH, "//input[@name='radio']")
@@ -59,8 +54,8 @@ def get_stations(driver):
     return dicc
 
 def main():
-    FILE_NAME = "lofi.csv"
-    SEARCH_NAME = "lofi"
+    FILE_NAME = "synth.csv"
+    SEARCH_NAME = "synthwave"
 
     service_object = Service(binary_path)
     driver = webdriver.Chrome(service=service_object)
