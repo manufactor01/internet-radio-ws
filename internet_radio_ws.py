@@ -1,15 +1,15 @@
-from utils import process_url
-from utils import process_name
-
 import csv
 import requests
-from bs4 import BeautifulSoup
+import time
 import pandas as pd
+from bs4 import BeautifulSoup
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from chromedriver_py import binary_path
 from selenium.webdriver.common.by import By
-import time
+
+from utils import process_url
+from utils import process_name
 
 TIMEOUT = 3
 URL = "https://www.internet-radio.com/"
@@ -37,11 +37,11 @@ def get_stations(driver):
     for elemento in elementos:
         sub_elementos = elemento.find_all('td')
 
-        # obtener título
+        # get titles
         titulo = process_name(sub_elementos[2].find('h4').getText())
         names.append(titulo)
 
-        # obtener enlace
+        # get urls
         enlaces = sub_elementos[1].find_all('a', href=True)
         url = process_url(enlaces[1]['href'])
         urls.append(url)
@@ -53,10 +53,7 @@ def get_stations(driver):
 
     return dicc
 
-def main():
-    FILE_NAME = "synth.csv"
-    SEARCH_NAME = "synthwave"
-
+def search_and_get_stations(search_name, file_name):
     service_object = Service(binary_path)
     driver = webdriver.Chrome(service=service_object)
 
@@ -64,11 +61,9 @@ def main():
     driver.maximize_window()
     time.sleep(TIMEOUT)
 
-    search_station(driver, SEARCH_NAME)
+    search_station(driver, search_name)
     dicc = get_stations(driver)
 
     df = pd.DataFrame(dicc)
-    df.to_csv(FILE_NAME, index=False)
+    df.to_csv(file_name, index=False)
     driver.close()
-
-main()
